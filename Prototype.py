@@ -124,14 +124,6 @@ class Poker():
         "Straight Flush",
         "Royal Flush"
     ]
-
-    # def evaluate_hand(self, hand):
-        # Implement logic to evaluate the hand and determine its rank
-        # This could involve checking for different hand types and comparing card values
-        # Return the rank of the hand along with any additional relevant information
-
-        # Total value of highest card on hand/Combined value of pocket cards,
-        # where A = 14, is the way to rank the different hands
         
     def evaluate_hand(self, hand):
         # Count the occurrences of each card value
@@ -139,17 +131,16 @@ class Poker():
         for card in hand:
             absolute_value = card.absolute_value()
             value_counts[absolute_value] = value_counts.get(absolute_value, 0) + 1
-        
-        # print(value_counts)
-
+            
         # Check for flush
-        suits = {card.suit for card in hand}
-        is_flush = len(suits) == 1
+        suits_count = {suit: sum(1 for card in hand if card.suit == suit) for suit in set(card.suit for card in hand)}
+        is_flush = any(count >= 5 for count in suits_count.values())
 
         # Check for straight
         values = sorted(card.absolute_value() for card in hand)
-        is_straight = (max(values) - min(values) + 1) == len(values) or (max(values) == 14 and min(values) == 10 and len(set(values)) == 5)
-
+        is_straight = (max(values) - min(values) + 1) == len(values) or \
+                    (14 in values and 2 in values and 3 in values and 4 in values and 5 in values)
+                    
         # Determine rank of the hand
         if is_flush and is_straight and values[-1] == 14 and values[0] == 10:
             return "Royal Flush", value_counts
@@ -157,10 +148,10 @@ class Poker():
             return "Straight Flush", value_counts
         elif max(value_counts.values()) == 4:
             return "Four of a Kind", value_counts
-        elif sorted(value_counts.values()) == [2, 3]:
+        elif 3 in value_counts.values() and 2 in value_counts.values():
             return "Full House", value_counts
         elif is_flush:
-            return "Flush", value_counts
+            return "Flush", value_counts, suits_count
         elif is_straight:
             return "Straight", value_counts
         elif max(value_counts.values()) == 3:
@@ -178,106 +169,169 @@ class Poker():
         
         # Compare hand ranks
         if self.hand_rankings.index(rank1) > self.hand_rankings.index(rank2):
-            return info1
+            return f"Hand 1, by highest hand rank: {rank1, info1}"
         elif self.hand_rankings.index(rank1) < self.hand_rankings.index(rank2):
-            return info2
+            return f"Hand 2, by highest hand rank: {rank2, info2}"
         elif rank1 == rank2: #Equal rank, go by highest card and secondary card
-            if max(list(info1.keys())) > max(list(info2.keys())):
-                return f"Hand 1, by highest card: {list(info1.keys())[0]}"
-            elif list(info1.items())[1][0] > list(info2.items())[1][0]:
-                kicker_hand1 = (", ".join(map(str, hand1[1:2])))
-                return f"Hand 1, by highest kicker: {list(info1.keys())[1]}"
-            elif max(list(info1.keys())) < max(list(info2.keys())):
-                return f"Hand 2, by highest card: {list(info2.keys())[0]}"
-            elif list(info1.items())[1][0] < list(info2.items())[1][0]:
-                kicker_hand2 = (", ".join(map(str, hand2[1:2])))
-                return f"Hand 2, by highest kicker: {kicker_hand2}"
+            if rank1 in ["One Pair", "Three of a Kind", "Four of a Kind"]:
+                max_key_info1 = max(info1, key=lambda k: info1[k])
+                max_key_info2 = max(info2, key=lambda k: info2[k])
+                if max_key_info1 > max_key_info2:
+                    return f"Hand 1, by higher ranking hand: {rank1}, ({info1})"
+                elif max_key_info1 < max_key_info2:
+                    return f"Hand 2, by higher ranking hand: {rank2}, ({info2})"
+                
+            if rank1 == "Two Pair":
+                hand1_pairs = sorted([card for card, count in info1.items() if count == 2], reverse=True)
+                hand2_pairs = sorted([card for card, count in info2.items() if count == 2], reverse=True)
+                
+                if hand1_pairs[0] > hand2_pairs[0]:
+                    return f"Hand 1, by highest pair: {hand1_pairs[0]}"
+                if hand1_pairs[0] < hand2_pairs[0]:
+                    return f"Hand 2, by highest pair: {hand2_pairs[0]}"
+                elif hand1_pairs[1] > hand2_pairs[1]:
+                    return f"Hand 1, by highest secondary pair: {hand1_pairs[1]}"
+                elif hand1_pairs[1] < hand2_pairs[1]:
+                    return f"Hand 2, by highest secondary pair: {hand1_pairs[1]}"
+                
+            if rank1 == "Full House":
+                hand1_three_of_a_kind = max([card for card, count in info1.items() if count == 3])
+                hand2_three_of_a_kind = max([card for card, count in info2.items() if count == 3])
+                
+                # Compare three of a kind
+                if hand1_three_of_a_kind > hand2_three_of_a_kind:
+                    return f"Hand 1, by highest three of a kind: {hand1_three_of_a_kind}"
+                elif hand1_three_of_a_kind < hand2_three_of_a_kind:
+                    return f"Hand 2, by highest three of a kind: {hand2_three_of_a_kind}"
+
+            hand1_values = sorted(list(info1.keys())[0:2], reverse=True)
+            hand2_values = sorted(list(info2.keys())[0:2], reverse=True)
+            print(hand1_values)
+            print(hand2_values)
+            if hand1_values[0] > hand2_values[0]:
+                return f"Hand 1, by highest card: {str(hand1[0])}"
+            elif hand1_values[0] < hand2_values[0]:
+                return f"Hand 2, by highest card: {str(hand2[0])}"
+            elif hand1_values[1] > hand2_values[1]:
+                return f"Hand 1, by highest kicker: {str(hand1[1])}"
+            elif hand1_values[1] < hand2_values[1]:
+                return f"Hand 2, by highest kicker: {str(hand2[1])}"
             else:
                 return "split the pot"
 
 
 def main():
     print("Hello gambler! \n")
-    print("~~~ Testing Deck_of_cards method ~~~")
-    Ace_of_spades = Poker.Deck_of_cards(40)
-    print("Card:", Ace_of_spades)
-    print("Corresponding value:", Ace_of_spades.value)
-    print("Corresponding suit:", Ace_of_spades.suit)
-    Two_of_diamonds = Poker.Deck_of_cards(15)
-    print("Card:", Two_of_diamonds)
-    print("Comparing values:")
-    print("Is A Spades > 2 Diamonds?:", Ace_of_spades > Two_of_diamonds)
-    Ace_of_hearts = Poker.Deck_of_cards(1)
-    print("Is A Hearts == A Spades?:", Ace_of_hearts == Ace_of_spades, '\n')
-    print("Testing Deck_of_cards --> OK \n")
+    # print("~~~ Testing Deck_of_cards method ~~~")
+    # Ace_of_spades = Poker.Deck_of_cards(40)
+    # print("Card:", Ace_of_spades)
+    # print("Corresponding value:", Ace_of_spades.value)
+    # print("Corresponding suit:", Ace_of_spades.suit)
+    # Two_of_diamonds = Poker.Deck_of_cards(15)
+    # print("Card:", Two_of_diamonds)
+    # print("Comparing values:")
+    # print("Is A Spades > 2 Diamonds?:", Ace_of_spades > Two_of_diamonds)
+    # Ace_of_hearts = Poker.Deck_of_cards(1)
+    # print("Is A Hearts == A Spades?:", Ace_of_hearts == Ace_of_spades, '\n')
+    # print("Testing Deck_of_cards --> OK \n")
 
-    print("~~~ Testing class Poker, with 2 players ~~~")
-    game = Poker(2) #2 players
-    print("Initial deck:", game.deck)
-    player1_cards = game.deal(player=1)
-    print("Player 1's cards:", ", ".join(map(str, player1_cards)))
-    player2_cards = game.deal(player=2)
-    print("Player 2's cards:", ", ".join(map(str, player2_cards)))
-    flop = game.flop()
+    # print("~~~ Testing class Poker, with 2 players ~~~")
+    # game = Poker(2) #2 players
+    # print("Initial deck:", game.deck)
+    # player1_cards = game.deal(player=1)
+    # print("Player 1's cards:", ", ".join(map(str, player1_cards)))
+    # player2_cards = game.deal(player=2)
+    # print("Player 2's cards:", ", ".join(map(str, player2_cards)))
+    # flop = game.flop()
+    # print("Flop revealed:", ", ".join(map(str, flop)))
+    # turn = game.turn([card.value for card in flop])
+    # print("Turn revealed:", ", ".join(map(str, turn)))
+    # river = game.river([card.value for card in turn])
+    # print("River revealed:", ", ".join(map(str, river)))
+    # print("Preliminary version of dealing --> OK \n")
+
+    # print("~~~ Trying class Poker, evaluating one hand ~~~")
+    # game = Poker(2)
+    # hand = [game.Deck_of_cards(14), game.Deck_of_cards(2), game.Deck_of_cards(27), game.Deck_of_cards(37), game.Deck_of_cards(24)]
+    # for card in hand:
+    #     print(card)
+    # rank, info = game.evaluate_hand(hand)
+    # print("Hand Rank:", rank)
+    # info = [game.Deck_of_cards(key).absolute_value() for key, value in info.items() for _ in range(value)]
+    # print("Hand Info:", info)
+
+    # # Convert numerical values to string representations in the info dictionary
+    # # info_values_strings = [str(game.Deck_of_cards(value)) for value in info["values"]]
+
+    # # print("Hand:", ", ".join(info_values_strings))
+    # print("Preliminary version of evaluation OK \n")
+
+    # print("~~~ Trying class Poker, evaluating and comparing two hands with pre-determined river ~~~")
+    # hand1 = [game.Deck_of_cards(1), game.Deck_of_cards(46)]
+    # hand2 = [game.Deck_of_cards(14), game.Deck_of_cards(26)]
+    # # river = [game.Deck_of_cards(40), game.Deck_of_cards(27), game.Deck_of_cards(51), game.Deck_of_cards(42), game.Deck_of_cards(28)]
+    # river = [game.Deck_of_cards(3), game.Deck_of_cards(22), game.Deck_of_cards(51), game.Deck_of_cards(42), game.Deck_of_cards(28)]
+    # print("Player 1's hand:")
+    # # print(hand1)
+    # print("Player 1's cards:", ", ".join(map(str, hand1)))
+    # for card in hand1:
+    #     print(card)
+    # print("")
+    # print("Player 2's hand:")
+    # for card in hand2:
+    #     print(card)
+    # print("")
+    # print("River:")
+    # for card in river:
+    #     print(card)
+    # print("")
+    # hand1.extend(river)
+    # # print("Player 1's cards:", ", ".join(map(str, hand1[:2])))
+    # hand2.extend(river)
+    # # print("Player 1's cards:", ", ".join(map(str, hand2[:2])))
+    # print("")
+    # rank1, info1 = game.evaluate_hand(hand1)
+    # print("Hand Rank:", rank1)
+    # print("Hand Info:", info1, '\n')
+    # # hand1_values = [game.Deck_of_cards(key).absolute_value() for key, value in info1.items() for _ in range(value)]
+    # # print(hand1_values)
+
+    # rank2, info2 = game.evaluate_hand(hand2)
+    # print("Hand Rank:", rank2)
+    # print("Hand Info:", info2)
+
+    # # rank, info = game.evaluate_hand(hand1)
+    # # rank, info = game.evaluate_hand(hand2)
+    # winner = game.compare_hands(hand1, hand2)
+    # print("Winner:\n", winner, '\n')
+    
+    print("~~~ Poker, comparing two hands with dealer ~~~")
+    
+    game2 = Poker(2) #2 players
+    player1_cards2 = game2.deal(player=1)
+    print("Player 1's cards:", ", ".join(map(str, player1_cards2)))
+    player2_cards2 = game2.deal(player=2)
+    print("Player 2's cards:", ", ".join(map(str, player2_cards2)))
+    flop = game2.flop()
     print("Flop revealed:", ", ".join(map(str, flop)))
-    turn = game.turn([card.value for card in flop])
+    turn = game2.turn([card.value for card in flop])
     print("Turn revealed:", ", ".join(map(str, turn)))
-    river = game.river([card.value for card in turn])
+    river = game2.river([card.value for card in turn])
     print("River revealed:", ", ".join(map(str, river)))
-    print("Preliminary version of dealing --> OK \n")
+    
+    player1_cards2.extend(river)
+    player2_cards2.extend(river)
+    
+    rank11, info11 = game2.evaluate_hand(player1_cards2)
+    print("Hand Rank:", rank11)
+    print("Hand Info:", info11, '\n')
 
-    print("~~~ Trying class Poker, evaluating one hand ~~~")
-    game = Poker(2)
-    hand = [game.Deck_of_cards(14), game.Deck_of_cards(2), game.Deck_of_cards(27), game.Deck_of_cards(37), game.Deck_of_cards(24)]
-    for card in hand:
-        print(card)
-    rank, info = game.evaluate_hand(hand)
-    print("Hand Rank:", rank)
-    info = [game.Deck_of_cards(key).absolute_value() for key, value in info.items() for _ in range(value)]
-    print("Hand Info:", info)
-
-    # Convert numerical values to string representations in the info dictionary
-    # info_values_strings = [str(game.Deck_of_cards(value)) for value in info["values"]]
-
-    # print("Hand:", ", ".join(info_values_strings))
-    print("Preliminary version of evaluation OK \n")
-
-    print("~~~ Trying class Poker, evaluating and comparing two hands with pre-determined river ~~~")
-    hand1 = [game.Deck_of_cards(1), game.Deck_of_cards(46)]
-    hand2 = [game.Deck_of_cards(14), game.Deck_of_cards(26)]
-    # river = [game.Deck_of_cards(40), game.Deck_of_cards(27), game.Deck_of_cards(51), game.Deck_of_cards(42), game.Deck_of_cards(28)]
-    river = [game.Deck_of_cards(3), game.Deck_of_cards(22), game.Deck_of_cards(51), game.Deck_of_cards(42), game.Deck_of_cards(28)]
-    print("Player 1's hand:")
-    for card in hand1:
-        print(card)
-    print("")
-    print("Player 2's hand:")
-    for card in hand2:
-        print(card)
-    print("")
-    print("River:")
-    for card in river:
-        print(card)
-    print("")
-    hand1.extend(river)
-    # print("Player 1's cards:", ", ".join(map(str, hand1[:2])))
-    hand2.extend(river)
-    # print("Player 1's cards:", ", ".join(map(str, hand2[:2])))
-    print("")
-    rank1, info1 = game.evaluate_hand(hand1)
-    print("Hand Rank:", rank1)
-    print("Hand Info:", info1, '\n')
-    # hand1_values = [game.Deck_of_cards(key).absolute_value() for key, value in info1.items() for _ in range(value)]
-    # print(hand1_values)
-
-    rank2, info2 = game.evaluate_hand(hand2)
-    print("Hand Rank:", rank2)
-    print("Hand Info:", info2)
-
-    # rank, info = game.evaluate_hand(hand1)
-    # rank, info = game.evaluate_hand(hand2)
-    winner = game.compare_hands(hand1, hand2)
-    print("Winner:\n", winner)
+    rank22, info22 = game2.evaluate_hand(player2_cards2)
+    print("Hand Rank:", rank22)
+    print("Hand Info:", info22)
+    
+    winner2 = game2.compare_hands(player1_cards2, player2_cards2)
+    print('\033[4m' + 'Winner:' + '\033[0m \n', winner2)
 
 
     # print("Amount of cards left after dealing 2 players:", len(game.deck))

@@ -7,7 +7,7 @@ list_of_cards = ["A", "2", "3", "4", "5", "6", \
 #     print(f"{list_of_cards[i]}:")
 #     print([*range(i+1, 53, 13)])
 
-# print([*range(1,53)])
+print([*range(1,53)])
 print("Hearts:", [*range(1, 14)])
 print("Diamonds:", [*range(14, 28)])
 print("Clubs:", [*range(28, 40)])
@@ -42,3 +42,5 @@ for i in list_of_cards:
 
 
 print(u'\u2665\u2660\u2666\u2663')
+
+print("\n")
